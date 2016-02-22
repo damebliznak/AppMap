@@ -68,8 +68,10 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.security.KeyStore;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -79,15 +81,16 @@ public class MapsApp extends FragmentActivity implements OnMapReadyCallback, Goo
 
     private GoogleMap mMap;
     private GoogleApiClient mGoogleApiClient;
-    Button btn1;
+    Button btn1,btnip;
     Location location = null;
-    String lat, lon;
+    String lat, lon,namekk, address1kk,token=null,httpurl = "",kk;
     double lat1, lon1;
     Thread vopoz, vobaza;
     ListView listalokali;
-    String namekk, address1kk;
-    String token=null;
-   
+    final String[] m_Text = {""};
+    List<Map<String, String>> data = new ArrayList<Map<String, String>>();
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -110,6 +113,32 @@ public class MapsApp extends FragmentActivity implements OnMapReadyCallback, Goo
         listalokali = (ListView) findViewById(R.id.listView);
 
         btn1 = (Button) findViewById(R.id.btn);
+        btnip = (Button) findViewById(R.id.btn1);
+        btnip.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String httpurl = "";
+                    AlertDialog.Builder builder = new AlertDialog.Builder(MapsApp.this);
+                    builder.setTitle("IP adresa");
+                    final EditText input = new EditText(MapsApp.this);
+                    input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_NORMAL);
+                    builder.setView(input);
+                    builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            m_Text[0] = input.getText().toString();
+                        }
+                    });
+                    builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            dialog.cancel();
+                        }
+                    });
+                    builder.show();
+
+            }
+        });
         btn1.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -121,54 +150,58 @@ public class MapsApp extends FragmentActivity implements OnMapReadyCallback, Goo
                 Log.w("ttttt", String.valueOf(location));
                 mMap.addMarker(new MarkerOptions().position(new LatLng(lat1, lon1)).draggable(true));
                 mMap.setMyLocationEnabled(true);
+                List<Map<String, String>> data = null;
                 vopoz = new Thread(new Runnable() {
-
                     @Override
                     public void run() {
-                        String result = "";
+                        final String[] aa = {""};
+                        final String[] bb = {""};
                         InputStream inputStream;
-                        String kk = null;
+                        kk="";
+
                         try {
-                            String URL = "https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=" + lat1 + "," + lon1 + "&radius=500&types=food&hasNextPage=true&nextPage()=true&key=AIzaSyCIo0Y9DqDyvK5aV_pLgYrprs4aPDoaH-8";
-                            // create HttpClient
-                            HttpClient httpclient = new DefaultHttpClient();
-                            // make GET request to the given URL
-                            HttpResponse httpResponse = httpclient.execute(new HttpGet(URL));
-                            // receive response as inputStream
-                            inputStream = httpResponse.getEntity().getContent();
-                            Log.w("kkkkk1", URL);
-                            // convert inputstream to string
-                            if (inputStream != null) {
-                                kk = OdIsvoJson(inputStream);
-                                result = String.valueOf(inputStream);
-                            } else
-                                result = "Did not work!";
+
+                            Thread.sleep(4000);
+
+                            if(aa[0] !=""|| aa[0] !=null){
+                               inputStream=slednaStranaGoogle(aa[0]);
+                                kk=OdIsvoJson(inputStream);
+                                runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        bb[0] = OdStringJson(kk);
+                                    }
+                                });
+
+                            }
+                            Log.w("bb",bb[0]);
+                            Thread.sleep(4000);
+
+                            if(bb[0] !=""|| bb[0] !=null){
+                                inputStream=slednaStranaGoogle(bb[0]);
+                                kk=OdIsvoJson(inputStream);
+                                runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        bb[0] = OdStringJson(kk);
+                                    }
+                                });
+                            }
+                        } catch (NullPointerException e){
+                            Log.w("null greska",e);
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    Toast.makeText(MapsApp.this, "Problemi so wifi konekcijata,ili Google serverot nema podatoci za koordinatite ", Toast.LENGTH_SHORT).show();
+
+                                }
+                            });
                         } catch (Exception e) {
                             Log.w("InputStream", e.getLocalizedMessage());
                         }
-                        Handler handler = new Handler(Looper.getMainLooper());
-                        final String finalKk = kk;
-                        handler.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                try {
-                                    OdStringJson(finalKk);
-                                } catch (NullPointerException e) {
-                                    runOnUiThread(new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            Toast.makeText(MapsApp.this, "Problemi so wifi konekcijata,ili Google serverot nema podatoci za koordinatite ", Toast.LENGTH_SHORT).show();
-                                        }
-                                    });
-                                }
-                            }
-                            // your UI code here
-                        });
-
                     }
                 });
                 vopoz.start();
-
 
             }
 
@@ -178,66 +211,95 @@ public class MapsApp extends FragmentActivity implements OnMapReadyCallback, Goo
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 //dialog boks za ip adresa
-                final String[] m_Text = {""};
-                AlertDialog.Builder builder = new AlertDialog.Builder(MapsApp.this);
-                builder.setTitle("IP adresa");
-                final EditText input = new EditText(MapsApp.this);
-                input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_NORMAL);
-                builder.setView(input);
-                builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        m_Text[0] = input.getText().toString();
-                    }
-                });
-                builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        dialog.cancel();
-                    }
-                });
-                builder.show();
-                //STL za cuvanje na podatocite za vo baza
-                HashMap<String, Object> obj = (HashMap<String, Object>) listalokali.getAdapter().getItem(position);
-                namekk = (String) obj.get("name");
-                address1kk = (String) obj.get("address");
-                final String httpurl = "http://" + m_Text + "/in.php";
-                Log.w("Yourtag", namekk + "\n" + address1kk);
-                //nitka za startuvanje na php fajlot na serverot
-                vobaza = new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>();
-                        nameValuePairs.add(new BasicNameValuePair("name", namekk));
-                        nameValuePairs.add(new BasicNameValuePair("address", address1kk));
-                        try {
-                            HttpClient httpClient = new DefaultHttpClient();
-                            HttpPost httpPost = new HttpPost(httpurl);
-                            httpPost.setEntity(new UrlEncodedFormEntity(nameValuePairs));
-                            HttpResponse response = httpClient.execute(httpPost);
 
-                        } catch (ClientProtocolException e) {
-                        } catch (IOException e) {
+
+                    //STL za cuvanje na podatocite za vo baza
+                    HashMap<String, Object> obj = (HashMap<String, Object>) listalokali.getAdapter().getItem(position);
+                    namekk = (String) obj.get("name");
+                    address1kk = (String) obj.get("address");
+                    httpurl = "http://" + m_Text[0] + "/in.php";
+                    Log.w("Yourtag", namekk + "\n" + address1kk + "\n" + m_Text + "\n" + httpurl);
+
+                    //nitka za startuvanje na php fajlot na serverot
+                    final String finalHttpurl = httpurl;
+                    vobaza = new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>();
+                            nameValuePairs.add(new BasicNameValuePair("name", namekk));
+                            nameValuePairs.add(new BasicNameValuePair("address", address1kk));
+                            try {
+                                HttpClient httpClient = new DefaultHttpClient();
+                                HttpPost httpPost = new HttpPost(finalHttpurl);
+                                httpPost.setEntity(new UrlEncodedFormEntity(nameValuePairs));
+                                HttpResponse response = httpClient.execute(httpPost);
+
+                            } catch (Exception e) {
+                                runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        Toast.makeText(MapsApp.this, "Problemi so ip adresa ", Toast.LENGTH_SHORT).show();
+
+                                    }
+                                });
+                                Log.w("adresa", e);
+                            }
                         }
-                    }
-                });
-                vobaza.start();
-            }
+                    });
+                    vobaza.start();
+                }
+
         });
     }
 
 
-    public boolean OdStringJson(String rez) {
-        int i = 0;
+    public InputStream zemiodGoogle(){
+        InputStream inputStream11=null;
+        try {
+            String URL = "https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=" + lat1 + "," + lon1 + "&radius=500&types=food&hasNextPage=true&nextPage()=true&key=AIzaSyCIo0Y9DqDyvK5aV_pLgYrprs4aPDoaH-8";
+            // create HttpClient
+            HttpClient httpclient = new DefaultHttpClient();
+            // make GET request to the given URL
+            HttpResponse httpResponse = httpclient.execute(new HttpGet(URL));
+            // receive response as inputStream
+            inputStream11 = httpResponse.getEntity().getContent();
+        }catch (Exception e){
+            Toast.makeText(MapsApp.this, "Problemi so wifi konekcijata,ili Google serverot nema podatoci za koordinatite ", Toast.LENGTH_SHORT).show();
 
+        }
+        return  inputStream11;
+
+
+
+    }
+    public InputStream slednaStranaGoogle(String tokenod){
+        InputStream inputStream11=null;
+        try {
+            String URL = "https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=" + lat1 + "," + lon1 + "&radius=500&types=food&hasNextPage=true&nextPage()=true&key=AIzaSyCIo0Y9DqDyvK5aV_pLgYrprs4aPDoaH-8&pagetoken="+tokenod;
+            // create HttpClient
+            Log.w("sledna url token",tokenod);
+            HttpClient httpclient = new DefaultHttpClient();
+            // make GET request to the given URL
+            HttpResponse httpResponse = httpclient.execute(new HttpGet(URL));
+            // receive response as inputStream
+            inputStream11 = httpResponse.getEntity().getContent();
+
+        }catch (Exception e){
+            Toast.makeText(MapsApp.this, "Problemi so wifi konekcijata,ili Google serverot nema podatoci za koordinatite ", Toast.LENGTH_SHORT).show();
+
+        }
+        return  inputStream11;
+    }
+    public String OdStringJson(String rez) {
         try {
             JSONObject jObject = new JSONObject(rez);
             JSONArray jArr = jObject.getJSONArray("results");
+            try{
             token = (String) jObject.get("next_page_token");
-            Log.w("token",token);
-            List<Map<String, String>> data = new ArrayList<Map<String, String>>();
-
-            for (i = 0; i < jArr.length(); i++) {
+            }catch (Exception e){
+                token=null;
+            }
+            for (int i = 0; i < jArr.length(); i++) {
                 JSONObject jObject1 = jArr.getJSONObject(i);
                 JSONObject jib = new JSONObject(String.valueOf(jObject1.getJSONObject("geometry")));
                 JSONObject jib1 = new JSONObject(String.valueOf(jib.getJSONObject("location")));
@@ -246,15 +308,12 @@ public class MapsApp extends FragmentActivity implements OnMapReadyCallback, Goo
                 String go1 = jib1.getString("lng");
                 String name = jObject1.getString("name");
                 String adresa = jObject1.getString("vicinity");
-
-
                 Map<String, String> lok = new HashMap<String, String>(2);
                 lok.put("name", name);
                 lok.put("address", adresa);
                 lok.put("lat", go);
                 lok.put("lng", go1);
                 data.add(lok);
-
                 SimpleAdapter adapter = new SimpleAdapter(this, data,
                         android.R.layout.simple_list_item_2,
                         new String[]{"name", "address", "lat", "lng"},
@@ -283,6 +342,7 @@ public class MapsApp extends FragmentActivity implements OnMapReadyCallback, Goo
                     @Override
                     public void onMarkerDragEnd(Marker marker) {
                         mMap.clear();
+                        data.clear();
                         if (!vopoz.isAlive()) {
                             LatLng posti = marker.getPosition();
                             lat1 = posti.latitude;
@@ -297,17 +357,13 @@ public class MapsApp extends FragmentActivity implements OnMapReadyCallback, Goo
                     }
                 });
                 Log.w("kolku ima", String.valueOf(data.lastIndexOf(lok)));
-
             }
-
         } catch (JSONException e) {
             e.printStackTrace();
         }
-        if(token.equals(null)) {return false;}
-        else {return true;}
-
+       if(token==null)return null;
+        else    return token ;
     }
-
     public String OdIsvoJson(InputStream is) {
         InputStream is1 = is;
         String resultJsn = null;
@@ -324,7 +380,45 @@ public class MapsApp extends FragmentActivity implements OnMapReadyCallback, Goo
         }
         return resultJsn;
     }
+    public void nitki(){
 
+        /*
+                for (int i = 0; i <3 ; i++) {
+                    try {
+                        final int finalI = i;
+                        vopoz = new Thread(new Runnable() {
+                            @Override
+                            public void run() {
+                                String aa ="";
+                                InputStream inputStream;
+                                kk = "";
+                                if(finalI ==0){
+                                    if(!aa.equals("") || aa!=null){
+                                        inputStream = slednaStranaGoogle(aa);
+                                        kk=OdIsvoJson(inputStream);
+                                        aa = OdStringJson(kk);
+                                    }else{
+                                        if(aa.equals("")|| aa !=null){
+                                            inputStream=slednaStranaGoogle(aa);
+                                            kk=OdIsvoJson(inputStream);
+                                            aa = OdStringJson(kk);
+                                        }
+
+                                    }
+                                }}
+
+
+                        });
+
+                        vopoz.start();
+                        vopoz.join();    // Wait for it to finish.
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    } catch (NullPointerException e){
+
+                    }
+                }*/
+    }
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
@@ -342,18 +436,14 @@ public class MapsApp extends FragmentActivity implements OnMapReadyCallback, Goo
         });
 
     }
-
-
     @Override
     public void onConnected(Bundle bundle) {
 
     }
-
     @Override
     public void onConnectionSuspended(int i) {
 
     }
-
     @Override
     public void onConnectionFailed(ConnectionResult connectionResult) {
 

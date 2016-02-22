@@ -22,12 +22,22 @@
         android:layout_height="364dp">
 
         <Button
+
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Search"
             android:id="@+id/btn"
             android:layout_gravity="bottom"
             />
+            <Button
+
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="IP addres"
+                android:id="@+id/btn1"
+                android:layout_gravity="left"
+
+                />
         </fragment>
 
 
